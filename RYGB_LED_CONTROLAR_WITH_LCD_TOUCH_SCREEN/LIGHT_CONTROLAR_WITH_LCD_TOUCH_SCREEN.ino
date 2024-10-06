@@ -104,12 +104,17 @@ void setup(void) {
 }
 
 void drawButton(int x, int y, int w, int h, uint16_t color, const char* label) {
-    tft.fillRect(x, y, w, h, color); // Draw button
-    tft.drawRect(x, y, w, h, WHITE); // Draw button border
-    tft.setTextColor(WHITE);
-    tft.setCursor(x + 10, y + 10); // Set text position
-    tft.print(label); // Print button label
+    int radius = 20; // Set the radius for the rounded corners
+    tft.fillRoundRect(x, y, w, h, radius, color); // Draw button with rounded corners
+    tft.drawRoundRect(x, y, w, h, radius, BLACK); // Draw button border with rounded corners
+
+    // Move text position below the button
+    tft.setTextColor(BLACK); // Set text color to black to contrast with white background
+    tft.setCursor(x + 10, y + h + 10); // Adjust cursor position for the label below the button
+    tft.print(label); // Print the button label
 }
+
+
 
 #define MINPRESSURE 10
 #define MAXPRESSURE 1000
@@ -135,30 +140,30 @@ void loop() {
                     ledBlueState = !ledBlueState;  // Toggle Blue LED state
                     digitalWrite(ledBlue, ledBlueState ? HIGH : LOW); // Set LED state
                     Serial.println(ledBlueState ? "Blue LED On" : "Blue LED Off");
-                    turnOffOtherLeds(ledBlue);
+                   // turnOffOtherLeds(ledBlue);
                 } else if (p.x >= startX + BUTTON_WIDTH + 10 && p.x <= startX + (BUTTON_WIDTH + 10) * 2) {
                     ledRedState = !ledRedState;  // Toggle Red LED state
                     digitalWrite(ledRed, ledRedState ? HIGH : LOW); // Set LED state
                     Serial.println(ledRedState ? "Red LED On" : "Red LED Off");
-                    turnOffOtherLeds(ledRed);
+                    //turnOffOtherLeds(ledRed);
                 }
             } else if (p.y >= (50 + BUTTON_HEIGHT + 30) && p.y <= (50 + BUTTON_HEIGHT + 30 + BUTTON_HEIGHT)) { // Row for middle buttons
                 if (p.x >= startX && p.x <= startX + BUTTON_WIDTH) {
                     ledYellowState = !ledYellowState;  // Toggle Yellow LED state
                     digitalWrite(ledYellow, ledYellowState ? HIGH : LOW); // Set LED state
                     Serial.println(ledYellowState ? "Yellow LED On" : "Yellow LED Off");
-                    turnOffOtherLeds(ledYellow);
+                    //turnOffOtherLeds(ledYellow);
                 } else if (p.x >= startX + BUTTON_WIDTH + 10 && p.x <= startX + (BUTTON_WIDTH + 10) * 2) {
                     ledGreenState = !ledGreenState;  // Toggle Green LED state
                     digitalWrite(ledGreen, ledGreenState ? HIGH : LOW); // Set LED state
                     Serial.println(ledGreenState ? "Green LED On" : "Green LED Off");
-                    turnOffOtherLeds(ledGreen);
+                   // turnOffOtherLeds(ledGreen);
                 }
             }
         }
     }
 }
-
+/*
 // Function to turn off all LEDs except the one that is turned on
 void turnOffOtherLeds(int activeLed) {
     if (activeLed != ledRed) digitalWrite(ledRed, LOW);
@@ -166,7 +171,7 @@ void turnOffOtherLeds(int activeLed) {
     if (activeLed != ledGreen) digitalWrite(ledGreen, LOW);
     if (activeLed != ledBlue) digitalWrite(ledBlue, LOW);
 }
-
+*/
 // Function to turn off all LEDs
 void turnOffAllLeds() {
     digitalWrite(ledRed, LOW);     // Turn off Red LED
