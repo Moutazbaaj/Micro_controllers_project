@@ -6,106 +6,92 @@
 //
 
 import SwiftUI
-
+import CoreBluetooth
 struct ContentView: View {
-    let esp8266Address = "http://192.168.178.153"  // Replace with your ESP8266 IP address
-    
-    // States for WiFi controls
-    @State private var isRedOn = false
-    @State private var isGreenOn = false
-    @State private var isBlueOn = false
-    @State private var isYellowOn = false
-    @State private var isWhiteOn = false
-    
+    @ObservedObject var bluetoothManager = BluetoothManager()
     var body: some View {
         VStack(spacing: 20) {
-            Text("LED Controller")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding()
-            
-            VStack(spacing: 15) {
-                ToggleButton(isOn: $isRedOn, color: .red, label: "Red Light", onCommand: "/red/on", offCommand: "/red/off")
-                ToggleButton(isOn: $isGreenOn, color: .green, label: "Green Light", onCommand: "/green/on", offCommand: "/green/off")
-                ToggleButton(isOn: $isBlueOn, color: .blue, label: "Blue Light", onCommand: "/blue/on", offCommand: "/blue/off")
-                ToggleButton(isOn: $isYellowOn, color: .yellow, label: "Yellow Light", onCommand: "/yellow/on", offCommand: "/yellow/off")
-                ToggleButton(isOn: $isWhiteOn, color: .white, label: "White Light", onCommand: "/white/on", offCommand: "/white/off")
+            Button("Turn On All Lights") {
+                bluetoothManager.sendCommand("1")
             }
-            .padding()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(LinearGradient(gradient: Gradient(colors: [Color.purple, Color.blue]), startPoint: .top, endPoint: .bottom))
-        .ignoresSafeArea()
-    }
-    
-    // Function to send HTTP commands to ESP8266
-    func sendHttpCommand(endpoint: String) {
-        guard let url = URL(string: esp8266Address + endpoint) else {
-            print("Invalid URL")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-            } else if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Response: \(httpResponse.statusCode)")
-                if let data = data {
-                    let responseData = String(data: data, encoding: .utf8) ?? ""
-                    print("Response data: \(responseData)")
-                }
+            .buttonStyle(.bordered)
+            Button("Turn Off All Lights") {
+                bluetoothManager.sendCommand("0")
             }
-        }.resume()
+            .buttonStyle(.bordered)
+            Button("Toggle Red Light") {
+                bluetoothManager.sendCommand("r")
+            }
+            .buttonStyle(.bordered)
+            Button("Toggle Green Light") {
+                bluetoothManager.sendCommand("g")
+            }
+            .buttonStyle(.bordered)
+            Button("Toggle Blue Light") {
+                bluetoothManager.sendCommand("b")
+            }
+            .buttonStyle(.bordered)
+            Button("Toggle Yellow Light") {
+                bluetoothManager.sendCommand("y")
+            }
+            .buttonStyle(.bordered)
+            Button("Toggle White Light") {
+                bluetoothManager.sendCommand("w")
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
     }
 }
-
-struct ToggleButton: View {
-    @Binding var isOn: Bool
-    var color: Color
-    var label: String
-    var onCommand: String
-    var offCommand: String
-    
-    var body: some View {
-        Button(action: {
-            isOn.toggle()
-            let command = isOn ? onCommand : offCommand
-            sendHttpCommand(endpoint: command)
-        }) {
-            HStack {
-                Circle()
-                    .fill(isOn ? color : Color.gray)
-                    .frame(width: 20, height: 20)
-                Text(label)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.leading, 10)
-            }
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.1)))
+class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+    var centralManager: CBCentralManager!
+    var hm19Peripheral: CBPeripheral!
+    var hm19Characteristic: CBCharacteristic?
+    override init() {
+        super.init()
+        centralManager = CBCentralManager(delegate: self, queue: nil)
+    }
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        print("Bluetooth state updated: \(central.state)")
+        if central.state == .poweredOn {
+            centralManager.scanForPeripherals(withServices: nil, options: nil)
+            print("Scanning for DSD TECH...")
+        } else {
+            print("Bluetooth not available.")
         }
     }
-    
-    func sendHttpCommand(endpoint: String) {
-        guard let url = URL(string: "http://192.168.178.153" + endpoint) else { return }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        URLSession.shared.dataTask(with: request) { _, response, error in
-            if let error = error {
-                print("Error sending request: \(error)")
-            } else if let response = response as? HTTPURLResponse {
-                print("HTTP Response: \(response.statusCode)")
-            }
-        }.resume()
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        print("Discovered peripheral: \(peripheral.name ?? "Unknown")")
+        if peripheral.name == "DSD TECH" {
+            hm19Peripheral = peripheral
+            centralManager.stopScan()
+            centralManager.connect(peripheral, options: nil)
+            print("Connecting to DSD TECH...")
+        }
+    }
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        peripheral.delegate = self
+        peripheral.discoverServices(nil)
+    }
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else { return }
+        for service in services {
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+    }
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard let characteristics = service.characteristics else { return }
+        for characteristic in characteristics {
+            hm19Characteristic = characteristic
+        }
+    }
+    func sendCommand(_ command: String) {
+        guard let characteristic = hm19Characteristic else { return }
+        if let data = command.data(using: .utf8) {
+            hm19Peripheral.writeValue(data, for: characteristic, type: .withResponse)
+        }
     }
 }
-
 #Preview {
     ContentView()
 }
