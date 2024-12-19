@@ -1,3 +1,25 @@
+/*
+ * SD Card Tester
+ * 
+ * Copyright (C) 2024 Moutaz Baaj
+ * 
+ * Licensed under the MIT License.
+ * You may obtain a copy of the License at
+ * 
+ *     https://opensource.org/licenses/MIT
+ * 
+ * This program is distributed "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * express or implied, including but not limited to the warranties of
+ * merchantability, fitness for a particular purpose, and noninfringement.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * Author: Moutaz Baaj
+ * Date: 2024-12-19
+ */
+
+
+
 #include <SD.h>
 #include <SPI.h>
 #include "SSD1306Wire.h"
