@@ -43,6 +43,177 @@ void beep() {
   delay(300);
 }
 
+void restart() {
+
+  if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
+    lastPress2 = millis();
+    Serial.println("Restarting ESP32...");
+    displayCenteredText("Restarting...");
+    beep();
+    delay(1000);
+    ESP.restart();
+  }
+
+}
+
+void showProgressBar(uint8_t progress) {
+  display.clear();
+  int16_t y = (display.getHeight() - 14) / 2;
+  display.drawProgressBar(12, y, 100, 10, progress); // Adjust x, y, width, height as needed
+  display.display();
+}
+
+void SDInit() {
+  display.clear();
+  display.drawString(28, 12, "Initializing SD card...");
+  display.display();
+
+  for (int i = 0; i <= 100; i += 20) {
+    showProgressBar(i); // Update progress
+    delay(500);         // Simulate initialization steps
+  }
+
+  if (!SD.begin(SD_CS_PIN)) {
+    Serial.println("SD card initialization failed!");
+    display.clear();
+    display.drawString(28, 22, "SD init failed!");
+    display.drawString(8, 38, "Hold Button B to Restart");
+    display.display();
+    beep();
+   
+     // Wait until Button B is pressed
+     while (true) {
+     restart();
+     }
+    return;
+  }
+
+  Serial.println("SD card initialized.");
+  display.clear();
+  display.drawString(28, 22, "SD initialized.");
+  display.display();
+  beep();
+  delay(2000);
+}
+
+void SDTest() {
+  // Run the SD card test
+  displayCenteredText("Testing SD card...");
+  beep();
+  delay(2000);
+
+  // Write and Read Test
+  File testFile = SD.open("/SDTester.txt", FILE_WRITE);
+  if (testFile) {
+    testFile.println("SD Card Tester");
+    testFile.println("  ");
+    testFile.println("  ");
+    testFile.println("  ");
+    testFile.println("SD card test successful.");
+    testFile.println("  ");
+    testFile.println("  ");
+    testFile.println("  ");
+    testFile.println("  ");
+    testFile.println("  ");
+    testFile.println("Copyright (C) 2024 Moutaz Baaj");
+    testFile.println("Licensed under the MIT License.");
+    testFile.println("For details, visit: https://opensource.org/licenses/MIT");
+    testFile.close();
+
+   for (int i = 0; i <= 100; i += 25) {
+    showProgressBar(i); // Simulate formatting steps
+    delay(500);         // Simulate delay for each step
+  }
+    displayCenteredText("Write Test Passed");
+    beep();
+    delay(1000);
+
+    testFile = SD.open("/SDTester.txt");
+    if (testFile) {
+    for (int i = 0; i <= 100; i += 25) {
+    showProgressBar(i); // Simulate formatting steps
+    delay(500);         // Simulate delay for each step
+      }
+      displayCenteredText("Read Test Passed");
+      beep();
+      delay(1000);
+      testFile.close();
+    } else {
+      display.clear();
+      display.drawString(22, 22, "Read Test Failed!");
+      display.drawString(8, 38, "Hold Button B to Restart");
+      display.display();
+      beep();
+        while (true) {
+    restart();
+  }
+      return;
+    }
+    
+    displayCenteredText("Test Completed");
+    beep();
+    delay(2000);
+
+  } else {
+    display.clear();
+    display.drawString(22, 22, "Write Test Failed!");
+    display.drawString(8, 38, "Hold Button B to Restart");
+    display.display();
+    beep();
+    while (true) {
+    restart();
+  }
+    return;
+  }
+}
+
+void formatSDCard() {
+  beep();
+  while (true) {
+    display.clear();
+    const char* text = "Formatting:";
+    int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
+    display.drawString(x, 0, text);
+    display.drawString(0, 18, "Confirm Formatting");
+    display.drawString(0, 30, "A- Yes");
+    display.drawString(0, 48, "B- No");
+    display.display();
+
+  // If Button A (Yes) is pressed
+  if (digitalRead(BUTTON_PIN_1) == LOW && (millis() - lastPress1) > debounceDelay) {
+   lastPress1 = millis();
+  displayCenteredText("Formatting SD Card...");
+  for (int i = 0; i <= 100; i += 25) {
+    showProgressBar(i); // Simulate formatting steps
+    delay(500);         // Simulate delay for each step
+  }
+
+  // Actual formatting code
+  File root = SD.open("/");
+  while (true) {
+    File entry = root.openNextFile();
+    if (!entry) break;
+    SD.remove(entry.name());
+    entry.close();
+  }
+
+  displayCenteredText("Format Complete!");
+  beep();
+  delay(2000);
+   // Return to menu
+   displayMenu();
+   return; // Exit function
+    }
+
+    // If Button B (No) is pressed
+    if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
+      lastPress2 = millis();
+      displayMenu();  // Return to menu
+      return; // Exit function
+    }
+  }
+}
+
 void displayStartup() {
 
   display.clear();
@@ -64,15 +235,32 @@ void displayCenteredText(const String& text) {
 }
 
 void displayMenu() {
-  display.clear();
-  const char* text = "Menu:";
-  int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
-  display.drawString(x, 0, text);
-  display.drawString(0, 18, "A- Card Info");
-  display.drawString(0, 30, "B- New Test");
-  display.drawString(0, 48, "SD can be safely removed");
-  display.display();
-  beep();
+  while (true) {
+    display.clear();
+    const char* text = "Menu:";
+    int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
+    display.drawString(x, 0, text);
+    display.drawString(0, 18, "A- SD Card Info");
+    display.drawString(0, 30, "B- Format SD");
+    display.drawString(0, 48, "SD can be safely removed");
+    display.display();
+  
+
+    // Wait for button press
+    if (digitalRead(BUTTON_PIN_1) == LOW && (millis() - lastPress1) > debounceDelay) {
+      lastPress1 = millis();
+      displayCardInfo();  // Show SD card info
+      delay(4000);        // Pause for readability
+      continue;           // Return to the menu
+    }
+
+    if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
+      lastPress2 = millis();
+      formatSDCard();  // Format SD card
+      delay(2000);     // Pause for readability
+      continue;        // Return to the menu
+    }
+  }
 }
 
 void displayCardInfo() {
@@ -102,6 +290,7 @@ void displayCardInfo() {
 }
 
 void setup() {
+
   Serial.begin(115200);
 
   display.init();
@@ -113,94 +302,25 @@ void setup() {
   pinMode(BUTTON_PIN_2, INPUT_PULLUP);
 
   displayStartup();
+
   beep();
 
   // Wait for BUTTON_PIN_1 press before continuing
   while (digitalRead(BUTTON_PIN_1) == HIGH) { }
 
-  // Display SD Initialization Message
-  displayCenteredText("Initializing SD card...");
-  beep();
-  delay(2000);
+  // CD Init 
+  SDInit();
 
-  // Initialize the SD card
-  if (!SD.begin(SD_CS_PIN)) {
-    Serial.println("SD card initialization failed!");
-    display.clear();
-    display.drawString(28, 22, "SD init failed!");
-    display.drawString(8, 38, "Hold Button B to Restart");
-    display.display();
-    beep();
-    return;
-  }
-  Serial.println("SD card initialized.");
-  displayCenteredText("SD initialized.");
-  beep();
-  delay(2000);
-
-  // Run the SD card test
-  displayCenteredText("Testing SD card...");
-  beep();
-  delay(2000);
-
-  // Write and Read Test
-  File testFile = SD.open("/SDTester.txt", FILE_WRITE);
-  if (testFile) {
-    testFile.println("SD card test successful.");
-    testFile.close();
-    displayCenteredText("Write Test Passed");
-    beep();
-    delay(3000);
-
-    testFile = SD.open("/test.txt");
-    if (testFile) {
-      displayCenteredText("Read Test Passed");
-      beep();
-      delay(3000);
-      testFile.close();
-    } else {
-      display.clear();
-      display.drawString(22, 22, "Read Test Failed!");
-      display.drawString(8, 38, "Hold Button B to Restart");
-      display.display();
-      beep();
-      return;
-    }
-    
-    displayCenteredText("Test Completed");
-    beep();
-    delay(3000);
-
-  } else {
-    display.clear();
-    display.drawString(22, 22, "Write Test Failed!");
-    display.drawString(8, 38, "Hold Button B to Restart");
-    display.display();
-    beep();
-    return;
-  }
+  // Start SD Test 
+  SDTest();
 
   // Display SD Card Info
   displayMenu();
+
   beep();
+
   delay(2000);
+
 }
 
-void loop() {
-
-
-  if (digitalRead(BUTTON_PIN_1) == LOW && (millis() - lastPress1) > debounceDelay) {
-    lastPress1 = millis();
-    displayCardInfo();  // Display SD card information
-    delay(100);
-  }
-
-  if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
-    lastPress2 = millis();
-    Serial.println("Restarting ESP32...");
-    displayCenteredText("Restarting...");
-    beep();
-    delay(1000);
-    ESP.restart();
-  }
-}
+void loop() { }
