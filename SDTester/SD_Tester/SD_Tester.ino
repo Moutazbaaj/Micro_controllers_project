@@ -58,15 +58,13 @@ void restart() {
 
 void showProgressBar(uint8_t progress) {
   display.clear();
-  int16_t y = (display.getHeight() - 14) / 2;
+  int16_t y = (display.getHeight() - 8) / 2;
   display.drawProgressBar(12, y, 100, 10, progress); // Adjust x, y, width, height as needed
   display.display();
 }
 
 void SDInit() {
-  display.clear();
-  display.drawString(28, 12, "Initializing SD card...");
-  display.display();
+  displayCenteredText("Initializing SD card...");
 
   for (int i = 0; i <= 100; i += 20) {
     showProgressBar(i); // Update progress
@@ -89,9 +87,7 @@ void SDInit() {
   }
 
   Serial.println("SD card initialized.");
-  display.clear();
-  display.drawString(28, 22, "SD initialized.");
-  display.display();
+  displayCenteredText("SD initialized.");
   beep();
   delay(2000);
 }
