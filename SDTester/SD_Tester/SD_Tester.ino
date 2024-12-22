@@ -163,6 +163,7 @@ void SDTest() {
   }
 }
 
+/*
 void formatSDCard() {
   beep();
   while (true) {
@@ -199,7 +200,7 @@ void formatSDCard() {
    // Return to menu
    displayMenu();
    return; // Exit function
-    }
+  }
 
     // If Button B (No) is pressed
     if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
@@ -209,6 +210,84 @@ void formatSDCard() {
     }
   }
 }
+*/
+
+void formatSDCard() {
+  beep();
+  while (true) {
+    display.clear();
+    const char* text = "Formatting:";
+    int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
+    display.drawString(x, 0, text);
+    display.drawString(0, 18, "Confirm Formatting");
+    display.drawString(0, 30, "A- Yes");
+    display.drawString(0, 48, "B- No");
+    display.display();
+
+    if (digitalRead(BUTTON_PIN_1) == LOW && (millis() - lastPress1) > debounceDelay) {
+      lastPress1 = millis();
+      displayCenteredText("Formatting SD Card...");
+      for (int i = 0; i <= 100; i += 25) {
+        showProgressBar(i); // Simulate formatting steps
+        delay(500);         // Simulate delay for each step
+      }
+
+    File root = SD.open("/");
+    if (root) {
+     deleteFilesRecursive(root);
+     root.close();
+
+      } else {
+     Serial.println("Error opening root directory!");
+      }
+
+      displayCenteredText("Format Complete!");
+      beep();
+      delay(2000);
+      displayMenu();
+      return;
+    }
+
+    if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
+      lastPress2 = millis();
+      displayMenu();
+      return;
+    }
+  }
+}
+
+
+void deleteFilesRecursive(File dir) {
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) {
+      // No more files
+      break;
+    }
+    if (entry.isDirectory()) {
+      deleteFilesRecursive(entry);  // Recursively delete subdirectories
+      SD.remove(entry.name());      // Remove the directory itself
+      delay(200);  // Optional: Wait for a short time to allow the SD card to flush
+
+    } else {
+      Serial.print("Deleting file: ");
+      Serial.println(entry.name());
+      SD.remove(entry.name());
+      delay(200);  // Optional: Wait for a short time to allow the SD card to flush
+
+    }
+    entry.close();
+  }
+  Serial.print("Deleting folder: ");
+  Serial.println(dir.name());
+  SD.rmdir(dir.name()); // Delete the empty directory
+  SD.remove(dir.name());
+
+  SD.end();  // Ensure the SD card is unmounted and all changes are saved
+  delay(100);  // Optional: Wait for a short time to allow the SD card to flush
+
+}
+
 
 void displayStartup() {
 
@@ -296,6 +375,12 @@ void setup() {
   pinMode(SPEAKER_PIN, OUTPUT);
   pinMode(BUTTON_PIN_1, INPUT_PULLUP);
   pinMode(BUTTON_PIN_2, INPUT_PULLUP);
+
+  pinMode(34, INPUT_PULLUP);  
+    if (digitalRead(34) == LOW) {
+        esp_deep_sleep_start();
+    }
+
 
   displayStartup();
 
