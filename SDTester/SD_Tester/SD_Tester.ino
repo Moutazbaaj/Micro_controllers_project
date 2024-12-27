@@ -328,11 +328,6 @@ void setup() {
   pinMode(BUTTON_PIN_1, INPUT_PULLUP);
   pinMode(BUTTON_PIN_2, INPUT_PULLUP);
 
-  pinMode(34, INPUT_PULLUP);  
-    if (digitalRead(34) == LOW) {
-        esp_deep_sleep_start();
-    }
-
 
   displayStartup();
 
