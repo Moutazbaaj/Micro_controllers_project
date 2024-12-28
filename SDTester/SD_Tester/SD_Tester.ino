@@ -78,7 +78,6 @@ float batteryVoltage = getBatteryVoltage();
 int batteryPercentage = getBatteryPercentage(batteryVoltage);
 
 
-
 // Draw battery icon with percentage
 void drawBatteryIcon(int percentage) {
   // Icon position and size
@@ -101,10 +100,8 @@ void drawBatteryIcon(int percentage) {
 
   // Show percentage
   String percentageText = String(percentage) + "%";
-  display.drawString(x - display.getStringWidth(percentageText) - 4, y + 2, percentageText);
+  display.drawString(x - display.getStringWidth(percentageText) - 5, y + 2, percentageText);
 }
-
-
 
 void beep() {
   tone(SPEAKER_PIN, 1000, 200);
@@ -231,14 +228,14 @@ void SDTest() {
   }
 }
 
-
 void formatSDCard() {
   beep();
   while (true) {
+
     display.clear();
-    const char* text = "Formatting:";
-    int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
-    display.drawString(x, 0, text);
+    // Display battery icon and percentage
+    //drawBatteryIcon(batteryPercentage);
+    display.drawString(0, 1, "Formatting:");
     display.drawString(0, 18, "Confirm Formatting");
     display.drawString(0, 30, "A- Yes");
     display.drawString(0, 48, "B- No");
@@ -252,20 +249,23 @@ void formatSDCard() {
         delay(500);         // Simulate delay for each step
       }
 
-    File root = SD.open("/");
-    if (root) {
-     deleteFilesRecursive(root);
-     root.close();
+     File root = SD.open("/");
+      if (root) {
+       deleteFilesRecursive(root);
+       root.close();
+       displayCenteredText("Format Complete!");
+       beep();
+       delay(2000);
+       ESP.restart();
 
       } else {
-     Serial.println("Error opening root directory!");
+       Serial.println("Error opening root directory!");
+       displayCenteredText("Error opening root directory!");
+       beep();
+       delay(2000);
+       displayMenu();
+       return;
       }
-
-      displayCenteredText("Format Complete!");
-      beep();
-      delay(2000);
-      restart();
-      return;
     }
 
     if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
@@ -275,7 +275,6 @@ void formatSDCard() {
     }
   }
 }
-
 
 void deleteFilesRecursive(File dir) {
   while (true) {
@@ -308,7 +307,6 @@ void deleteFilesRecursive(File dir) {
 
 }
 
-
 void displayStartup() {
 
   display.clear();
@@ -335,7 +333,7 @@ void displayMenu() {
     display.clear();
 
 
-    // Display battery icon and percentage
+  // Display battery icon and percentage
   drawBatteryIcon(batteryPercentage);
 
     display.drawString(0, 1, "Menu:");
@@ -377,9 +375,9 @@ void displayCardInfo() {
   }
 
   display.clear();
-  const char* text = "Card Info:";
-  int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
-  display.drawString(x, 0, text);
+  // Display battery icon and percentage
+  //drawBatteryIcon(batteryPercentage);
+  display.drawString(0, 1, "Card Info:");
   display.drawString(0, 12, "Type: " + cardTypeStr);
   display.drawString(0, 24, "Size: " + String(cardSize) + " MB");
   display.drawString(0, 36, "Used: " + String(usedSpace) + " MB");
