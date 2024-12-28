@@ -233,9 +233,9 @@ void formatSDCard() {
   while (true) {
 
     display.clear();
-    // Display battery icon and percentage
-    //drawBatteryIcon(batteryPercentage);
-    display.drawString(0, 1, "Formatting:");
+    const char* text = "Formatting:";
+    int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
+    display.drawString(x, 0, text);
     display.drawString(0, 18, "Confirm Formatting");
     display.drawString(0, 30, "A- Yes");
     display.drawString(0, 48, "B- No");
@@ -375,9 +375,9 @@ void displayCardInfo() {
   }
 
   display.clear();
-  // Display battery icon and percentage
-  //drawBatteryIcon(batteryPercentage);
-  display.drawString(0, 1, "Card Info:");
+  const char* text = "Card Info:";
+  int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
+  display.drawString(x, 0, text);
   display.drawString(0, 12, "Type: " + cardTypeStr);
   display.drawString(0, 24, "Size: " + String(cardSize) + " MB");
   display.drawString(0, 36, "Used: " + String(usedSpace) + " MB");
