@@ -32,11 +32,79 @@
 
 #define BUTTON_PIN_2 14
 
+// ADC pin for battery monitoring
+#define BATTERY_ADC_PIN 34 
+
+// Resistor values (in ohms)
+const float R1 = 10000.0; // 10k
+const float R2 = 20000.0; // Two 10k resistors in series
+
+// ADC reference voltage (ESP32 ADC range is 0 - 3.3V)
+const float ADC_REF_VOLTAGE = 3.3;
+
+// ADC resolution (12-bit ADC: 0 - 4095)
+const int ADC_MAX_VALUE = 4095;
+
+
 static unsigned long lastPress1 = 0;
 static unsigned long lastPress2 = 0;
 unsigned long debounceDelay = 200;
   
 SSD1306Wire display(0x3C, 21, 22);
+
+
+
+// Battery voltage calculation
+float getBatteryVoltage() {
+  int rawADC = analogRead(BATTERY_ADC_PIN);
+  float voltageAtPin = (rawADC * ADC_REF_VOLTAGE) / ADC_MAX_VALUE;
+  float batteryVoltage = voltageAtPin * ((R1 + R2) / R2);
+  return batteryVoltage;
+}
+
+// Convert battery voltage to percentage
+int getBatteryPercentage(float voltage) {
+  if (voltage >= 4.2) return 100;
+  else if (voltage >= 4.0) return map(voltage * 100, 400, 420, 80, 100);
+  else if (voltage >= 3.8) return map(voltage * 100, 380, 400, 60, 80);
+  else if (voltage >= 3.6) return map(voltage * 100, 360, 380, 40, 60);
+  else if (voltage >= 3.4) return map(voltage * 100, 340, 360, 20, 40);
+  else if (voltage >= 3.2) return map(voltage * 100, 320, 340, 0, 20);
+  else return 0; // Below 3.2V is considered 0%
+}
+
+
+float batteryVoltage = getBatteryVoltage();
+int batteryPercentage = getBatteryPercentage(batteryVoltage);
+
+
+
+// Draw battery icon with percentage
+void drawBatteryIcon(int percentage) {
+  // Icon position and size
+  int x = display.getWidth() - 26; // Right corner 40
+  int y = 0;
+  int width = 20; //30
+  int height = 12; //12
+
+  // Draw battery outline
+  display.drawRect(x, y, width, height);
+
+  // Draw battery terminal
+  display.fillRect(x + width, y + 3, 2, 6);
+
+  // Calculate fill width based on percentage
+  int fillWidth = map(percentage, 0, 100, 0, width - 2);
+
+  // Draw fill
+  display.fillRect(x + 1, y + 1, fillWidth, height - 2);
+
+  // Show percentage
+  String percentageText = String(percentage) + "%";
+  display.drawString(x - display.getStringWidth(percentageText) - 4, y + 2, percentageText);
+}
+
+
 
 void beep() {
   tone(SPEAKER_PIN, 1000, 200);
@@ -196,7 +264,7 @@ void formatSDCard() {
       displayCenteredText("Format Complete!");
       beep();
       delay(2000);
-      displayMenu();
+      restart();
       return;
     }
 
@@ -244,11 +312,12 @@ void deleteFilesRecursive(File dir) {
 void displayStartup() {
 
   display.clear();
-  const char* text = "SD Tester";
-  int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
-  display.drawString(x, 0, text);
-  display.drawString(22, 22, "Insert an SD Card");
-  display.drawString(12, 38, "Hold Button A to Start");
+
+    // Display battery icon and percentage
+  drawBatteryIcon(batteryPercentage);
+  display.drawString(0, 1, "SD Tester");
+  display.drawString(22, 30, "Insert an SD Card");
+  display.drawString(12, 48, "Hold Button A to Start");
   display.display();
   beep();
 }
@@ -264,9 +333,12 @@ void displayCenteredText(const String& text) {
 void displayMenu() {
   while (true) {
     display.clear();
-    const char* text = "Menu:";
-    int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
-    display.drawString(x, 0, text);
+
+
+    // Display battery icon and percentage
+  drawBatteryIcon(batteryPercentage);
+
+    display.drawString(0, 1, "Menu:");
     display.drawString(0, 18, "A- SD Card Info");
     display.drawString(0, 30, "B- Format SD");
     display.drawString(0, 48, "SD can be safely removed");
@@ -352,3 +424,4 @@ void setup() {
 }
 
 void loop() { }
+
