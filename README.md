@@ -1,6 +1,6 @@
-# Arduino_Projects
+# ESP32 and Arduino_Projects
 Open source random Arduino  projects
 
-using Processing and C++
+using Processing Arduino IDE and C++ 
 
 enjoy :)
