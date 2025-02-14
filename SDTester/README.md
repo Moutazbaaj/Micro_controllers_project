@@ -1,6 +1,5 @@
 # ESP32 SD Card Tester with OLED Interface
 
-![Project Banner](https://via.placeholder.com/800x200.png?text=SD+Card+Tester+Project) <!-- Add your project image -->
 
 A professional-grade SD card testing tool built with ESP32, featuring OLED display, battery monitoring, and comprehensive card diagnostics.
 
@@ -57,3 +56,42 @@ GPIO25  |                |              | Buzzer
 GPIO12  |                |              | Button A
 GPIO14  |                |              | Button B
 GPIO34  |                |              | Battery ADC
+
+
+## Usage
+
+Workflow
+
+Initialization
+Insert SD card
+Hold Button A to begin
+System performs automatic detection
+Testing Phase
+Write verification (test file creation)
+Read verification (file contents check)
+Capacity validation
+Menu System
+Button A: Show card info
+Card type
+Total capacity
+Used/free space
+Button B: Format card
+Confirmation dialog
+Full recursive format
+Visual progress indicator
+Battery Monitoring
+
+Real-time voltage measurement
+Percentage estimation (3.2V-4.2V range)
+Low battery warning system
+Troubleshooting
+
+Issue	Solution
+SD Card Not Detected	Check SPI connections
+Formatting Fails	Verify card physical switch
+Inaccurate Battery %	Confirm resistor values
+Display Not Working	Verify I2C address (0x3C)
+False Test Failures	Try different SD card
+License
+
+This project is licensed under the MIT License - see LICENSE for details.
