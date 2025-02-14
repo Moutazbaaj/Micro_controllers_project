@@ -58,6 +58,8 @@ GPIO14  |                |              | Button B
 GPIO34  |                |              | Battery ADC
 
 
+___________________________              
+
 ## Usage
 
 Workflow
