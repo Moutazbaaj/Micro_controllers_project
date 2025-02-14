@@ -64,13 +64,17 @@ float getBatteryVoltage() {
 
 // Convert battery voltage to percentage
 int getBatteryPercentage(float voltage) {
-  if (voltage >= 4.2) return 100;
-  else if (voltage >= 4.0) return map(voltage * 100, 400, 420, 80, 100);
-  else if (voltage >= 3.8) return map(voltage * 100, 380, 400, 60, 80);
-  else if (voltage >= 3.6) return map(voltage * 100, 360, 380, 40, 60);
-  else if (voltage >= 3.4) return map(voltage * 100, 340, 360, 20, 40);
-  else if (voltage >= 3.2) return map(voltage * 100, 320, 340, 0, 20);
-  else return 0; // Below 3.2V is considered 0%
+    if (voltage >= 3.0) return 100; // Fully charged (since it disconnects at 3.0V)
+    else if (voltage >= 2.9) return map(voltage * 100, 290, 300, 90, 100);
+    else if (voltage >= 2.8) return map(voltage * 100, 280, 290, 80, 90);
+    else if (voltage >= 2.7) return map(voltage * 100, 270, 280, 70, 80);
+    else if (voltage >= 2.6) return map(voltage * 100, 260, 270, 60, 70);
+    else if (voltage >= 2.5) return map(voltage * 100, 250, 260, 50, 60);
+    else if (voltage >= 2.4) return map(voltage * 100, 240, 250, 40, 50);
+    else if (voltage >= 2.3) return map(voltage * 100, 230, 240, 30, 40);
+    else if (voltage >= 2.2) return map(voltage * 100, 220, 230, 20, 30);
+    else if (voltage >= 2.1) return map(voltage * 100, 210, 220, 10, 20);   
+    else return 0; // Below 2.1V
 }
 
 
@@ -231,46 +235,47 @@ void SDTest() {
 void formatSDCard() {
   beep();
   while (true) {
-
     display.clear();
     const char* text = "Formatting:";
     int16_t x = (display.getWidth() - display.getStringWidth(text)) / 2;
     display.drawString(x, 0, text);
     display.drawString(0, 18, "Confirm Formatting");
-    display.drawString(0, 30, "A- Yes");
+    display.drawString(0, 32, "A- Yes");
     display.drawString(0, 48, "B- No");
     display.display();
 
     if (digitalRead(BUTTON_PIN_1) == LOW && (millis() - lastPress1) > debounceDelay) {
       lastPress1 = millis();
       displayCenteredText("Formatting SD Card...");
+      
+      // Simulate formatting steps with progress
       for (int i = 0; i <= 100; i += 25) {
-        showProgressBar(i); // Simulate formatting steps
-        delay(500);         // Simulate delay for each step
+        showProgressBar(i);
+        delay(500);  // Simulate delay for each step
       }
 
-     File root = SD.open("/");
+      File root = SD.open("/");
       if (root) {
-       deleteFilesRecursive(root);
-       root.close();
-       displayCenteredText("Format Complete!");
-       beep();
-       delay(2000);
-       ESP.restart();
+        deleteFilesRecursive(root);
+        root.close();
+        displayCenteredText("Format Complete!");
+        beep();
+        delay(2000);
+        ESP.restart();  // Restart the ESP32 after formatting
 
       } else {
-       Serial.println("Error opening root directory!");
-       displayCenteredText("Error opening root directory!");
-       beep();
-       delay(2000);
-       displayMenu();
-       return;
+        Serial.println("Error opening root directory!");
+        displayCenteredText("Error opening root directory!");
+        beep();
+        delay(2000);
+        displayMenu();  // Return to the main menu if error occurs
+        return;
       }
     }
 
     if (digitalRead(BUTTON_PIN_2) == LOW && (millis() - lastPress2) > debounceDelay) {
       lastPress2 = millis();
-      displayMenu();
+      displayMenu();  // Return to the main menu
       return;
     }
   }
@@ -280,31 +285,24 @@ void deleteFilesRecursive(File dir) {
   while (true) {
     File entry = dir.openNextFile();
     if (!entry) {
-      // No more files
+      // No more files in this directory
       break;
     }
     if (entry.isDirectory()) {
-      deleteFilesRecursive(entry);  // Recursively delete subdirectories
-      SD.remove(entry.name());      // Remove the directory itself
-      delay(200);  // Optional: Wait for a short time to allow the SD card to flush
-
+      deleteFilesRecursive(entry);  // Recursively delete files and directories
     } else {
       Serial.print("Deleting file: ");
       Serial.println(entry.name());
-      SD.remove(entry.name());
-      delay(200);  // Optional: Wait for a short time to allow the SD card to flush
-
+      SD.remove(entry.name());  // Delete the file
+     // delay(20);  // Optional: Wait for a short time to allow SD card to flush
     }
     entry.close();
   }
-  Serial.print("Deleting folder: ");
+
+  // Once all files are deleted, remove the directory
+  Serial.print("Removing directory: ");
   Serial.println(dir.name());
-  SD.rmdir(dir.name()); // Delete the empty directory
-  SD.remove(dir.name());
-
-  SD.end();  // Ensure the SD card is unmounted and all changes are saved
-  delay(100);  // Optional: Wait for a short time to allow the SD card to flush
-
+  SD.rmdir(dir.name());  // Delete the directory itself
 }
 
 void displayStartup() {
